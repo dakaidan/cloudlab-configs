@@ -59,9 +59,9 @@ if [[ "$NO_SWAP" == "true" ]]; then
 fi
 
 echo "Creating new swap file of size $NEW_SWAP_SIZE GB..."
-DISK_SIZE=$(lsblk -bno SIZE "$DISK" | grep -o '^[0-9]*' | awk '{print int($1/1024)}')
+DISK_SIZE=$(lsblk -bno SIZE "$DISK" | grep -o '^[0-9]*' | awk '{print int($1/1024/1024)}')
 SWAP_START=$((DISK_SIZE - NEW_SWAP_SIZE))
-parted -s "$DISK" mkpart primary linux-swap "$SWAP_START"MiB 100%
+parted -s "$DISK" mkpart primary linux-swap "$SWAP_START"GiB 100%
 SWAP_PART=$(lsblk -rno NAME,TYPE | awk '$2 == "part" {print "/dev/"$1}' | tail -n 1)
 mkswap "$SWAP_PART"
 swapon "$SWAP_PART"

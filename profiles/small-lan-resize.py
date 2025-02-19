@@ -114,17 +114,22 @@ pc.defineParameter("exclusiveVMs", "Force use of exclusive VMs",
                                    "of exclusive VMs. When False, VMs may be shared or exclusive depending on the policy " +
                                    "of the cluster.")
 
-pc.defineParameter("GrowRoot", "Grow the root partition to fill the disk",)
+pc.defineParameter("growRoot", "Grow the root partition",
+                   portal.ParameterType.BOOLEAN, True,
+                   longDescription="Grow the root partition to fill the disk")
 
-pc.defineParameter("addSwap", portal.ParameterType.BOOLEAN, False,
+pc.defineParameter("addSwap", "Add swap space",
+                   portal.ParameterType.BOOLEAN, True,
                    longDescription="Add swap space to the VMs, if there is already a swap partition, " +
                                    "it will be resized to the specified size. " +
                                    "In any case, this partition will be at the end of the device")
 
-pc.defineParameter("swapSize", portal.ParameterType.INTEGER, 0,
+pc.defineParameter("swapSize", "Swap size to add or resize",
+                   portal.ParameterType.INTEGER, 8,
                    longDescription="Size in GB of the swap partition to add or resize")
 
-pc.defineParameter("swapPartition", portal.ParameterType.STRING, "", advanced=True,
+pc.defineParameter("swapPartition", "Swap partition to use",
+                   portal.ParameterType.STRING, "", advanced=True,
                    longDescription="The partition to use for the swap space, if empty, the script will try to find " +
                                     "a suitable partition, should be given in the format /dev/sdXN or /dev/nvme0nXpN")
 
@@ -143,6 +148,9 @@ if params.phystype != "":
     tokens = params.phystype.split(",")
     if len(tokens) != 1:
         pc.reportError(portal.ParameterError("Only a single type is allowed", ["phystype"]))
+
+if params.swapSize < 0:
+    pc.reportError(portal.ParameterError("Please specify a size greater then or equal zero", ["swapSize"]))
 
 pc.verifyParameters()
 
@@ -163,8 +171,8 @@ if params.nodeCount > 1:
 
 # args
 add_swap = "--no-swap" if not params.addSwap else ""
-swap_size = "--swap-size " + params.swapSize if params.swapSize >= 0 else ""
-swap_partition = "--swap-partition " + params.swapPartition if params.swapPartition != "" else ""
+swap_size = "--new-swap-size " + str(params.swapSize) if params.swapSize >= 0 else ""
+swap_partition = "--swap-part " + params.swapPartition if params.swapPartition != "" else ""
 move_swap = "sudo /local/move_swap.sh " + add_swap + " " + swap_size + " " + swap_partition
 
 # Process nodes, adding to link or lan.
@@ -174,14 +182,15 @@ for i in range(params.nodeCount):
         name = "vm" + str(i)
         node = request.XenVM(name)
         node.addService(pg.Execute(shell="sh",
-                                   command="wget -O /local/move_swap.sh https://raw.githubusercontent.com/dakaidan/cloudlab-configs/refs/heads/main/scripts/move_swap.sh"))
+                                   command="sudo wget -O /local/move_swap.sh https://raw.githubusercontent.com/dakaidan/cloudlab-configs/refs/heads/main/scripts/move_swap.sh"))
         node.addService(pg.Execute(shell="sh", command="chmod +x /local/move_swap.sh"))
         node.addService(
             pg.Execute(shell="sh", command=move_swap))
-        node.addService(pg.Execute(shell="sh",
-                                   command="wget -O /local/grow_root.sh https://raw.githubusercontent.com/dakaidan/cloudlab-configs/refs/heads/main/scripts/grow_root.sh"))
-        node.addService(pg.Execute(shell="sh", command="chmod +x /local/grow_root.sh"))
-        node.addService(pg.Execute(shell="sh", command="sudo /local/grow_root.sh"))
+        if params.growRoot:
+            node.addService(pg.Execute(shell="sh",
+                                       command="sudo wget -O /local/grow_root.sh https://raw.githubusercontent.com/dakaidan/cloudlab-configs/refs/heads/main/scripts/grow_root.sh"))
+            node.addService(pg.Execute(shell="sh", command="chmod +x /local/grow_root.sh"))
+            node.addService(pg.Execute(shell="sh", command="sudo /local/grow_root.sh"))
         if params.exclusiveVMs:
             node.exclusive = True
             pass
@@ -189,14 +198,15 @@ for i in range(params.nodeCount):
         name = "node" + str(i)
         node = request.RawPC(name)
         node.addService(pg.Execute(shell="sh",
-                                   command="wget -O /local/move_swap.sh https://raw.githubusercontent.com/dakaidan/cloudlab-configs/main/scripts/move_swap.sh"))
-        node.addService(pg.Execute(shell="sh", command="chmod +x /local/move_swap.sh"))
+                                   command="sudo wget -O /local/move_swap.sh https://raw.githubusercontent.com/dakaidan/cloudlab-configs/main/scripts/move_swap.sh"))
+        node.addService(pg.Execute(shell="sh", command="sudo chmod +x /local/move_swap.sh"))
         node.addService(
             pg.Execute(shell="sh", command=move_swap))
-        node.addService(pg.Execute(shell="sh",
-                                   command="wget -O /local/grow_root.sh https://raw.githubusercontent.com/dakaidan/cloudlab-configs/main/scripts/grow_root.sh"))
-        node.addService(pg.Execute(shell="sh", command="chmod +x /local/grow_root.sh"))
-        node.addService(pg.Execute(shell="sh", command="sudo /local/grow_root.sh"))
+        if params.growRoot:
+            node.addService(pg.Execute(shell="sh",
+                                       command="sudo wget -O /local/grow_root.sh https://raw.githubusercontent.com/dakaidan/cloudlab-configs/refs/heads/main/scripts/grow_root.sh"))
+            node.addService(pg.Execute(shell="sh", command="sudo chmod +x /local/grow_root.sh"))
+            node.addService(pg.Execute(shell="sh", command="sudo /local/grow_root.sh"))
         pass
     if params.osImage and params.osImage != "default":
         node.disk_image = params.osImage
