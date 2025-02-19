@@ -168,7 +168,7 @@ for i in range(params.nodeCount):
         name = "vm" + str(i)
         node = request.XenVM(name)
         node.addService(pg.Execute(shell="sh",
-                                   command="wget -O /local/move_swap.sh https://raw.githubusercontent.com/dakaidan/cloudlab-configs/main/scripts/move_swap.sh"))
+                                   command="wget -O /local/move_swap.sh https://raw.githubusercontent.com/dakaidan/cloudlab-configs/refs/heads/main/scripts/move_swap.sh"))
         node.addService(pg.Execute(shell="sh", command="chmod +x /local/move_swap.sh"))
         add_swap = "--no-swap" if not params.addSwap else ""
         swap_size = f"--swap-size {params.swapSize}" if params.swapSize >= 0 else ""
@@ -177,7 +177,7 @@ for i in range(params.nodeCount):
             pg.Execute(shell="sh", command=f"sudo /local/move_swap.sh {add_swap} {swap_size} {swap_partition}"))
 
         node.addService(pg.Execute(shell="sh",
-                                   command="wget -O /local/grow_root.sh https://raw.githubusercontent.com/dakaidan/cloudlab-configs/main/scripts/grow_root.sh"))
+                                   command="wget -O /local/grow_root.sh https://raw.githubusercontent.com/dakaidan/cloudlab-configs/refs/heads/main/scripts/grow_root.sh"))
         node.addService(pg.Execute(shell="sh", command="chmod +x /local/grow_root.sh"))
         node.addService(pg.Execute(shell="sh", command="sudo /local/grow_root.sh"))
         if params.exclusiveVMs:
