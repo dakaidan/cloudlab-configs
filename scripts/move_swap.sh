@@ -27,10 +27,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-
-# if recreateswap, there is no swap to begin with, so we skip to the end
-#if [[ "$RECREATE_SWAP" == "true" ]]; then
-#fi
+if [ -f /local/complete_swap ]; then
+    echo "Already completed, skipping"
+    exit 0
+fi
 
 # so if not
 if [[ -z "$SWAP_PART" ]]; then
@@ -76,3 +76,5 @@ mkswap "$SWAP_PART"
 swapon "$SWAP_PART"
 echo "$SWAP_PART none swap defaults 0 0" >> /etc/fstab
 echo "New swap partition created: $SWAP_PART"
+
+touch /local/complete_swap
