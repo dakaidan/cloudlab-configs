@@ -16,6 +16,10 @@ while [[ $# -gt 0 ]]; do
             NO_SWAP=true
             shift
             ;;
+        --recreate-swap)
+            RECREATE_SWAP=true
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
             exit 1
@@ -24,6 +28,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 
+# if recreateswap, there is no swap to begin with, so we skip to the end
+#if [[ "$RECREATE_SWAP" == "true" ]]; then
+#fi
+
+# so if not
 if [[ -z "$SWAP_PART" ]]; then
   SWAP_PART=$(lsblk -rno NAME,TYPE | awk '$2 == "part" {print "/dev/"$1}' | tail -n 1)
 fi
